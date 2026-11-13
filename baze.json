@@ -1,0 +1,1 @@
+{"preview":{"command":["python3","-m","http.server","5173","--bind","0.0.0.0"]}}
