@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>리딩런</title>
+<meta name="description" content="소리 내어 읽은 부분을 확인하며 지문 끝까지 달리는 읽기 게임이에요.">
+<meta property="og:title" content="리딩런">
+<meta property="og:description" content="소리 내어 읽은 부분을 확인하며 지문 끝까지 달리는 읽기 게임이에요.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Press+Start+2P&display=swap">
 <style>
 :root{--sky1:#43b0ee;--sky2:#d4f1ff;--cloud:#fff;--ink:#1f2a44;--card:#fffdf4;--line:#1f2a44;--grass:#47b04b;--grass2:#2f8a36;--dirt:#9a5a2b;--chip:#fffdf4;--shadow:#b9ad8a;
@@ -57,6 +60,16 @@ button.chip.dim{opacity:.6}
 #prize{font-size:1.7rem;color:#fff;text-shadow:0 2px 0 var(--line)}
 #msg{font-size:1.2rem;color:#fff;background:#e0382f;border:3px solid var(--line);border-radius:10px;padding:4px 12px}
 #msg:empty{display:none}
+.read-done{background:#d4f4d1;color:#174b20;border-radius:3px}
+.read-live{background:#ffe8a1;color:#513800;border-radius:3px}
+.read-next{text-decoration:underline;text-decoration-color:#de7400;text-decoration-thickness:3px;text-underline-offset:6px}
+.reading-help{font-size:1rem;line-height:1.7;word-break:keep-all;text-align:left}
+#micstatus{margin:0;font-size:1.05rem;line-height:1.7;word-break:keep-all;text-align:left}
+#heard{margin:6px 0;font-size:.95rem;line-height:1.7;text-align:left;overflow-wrap:anywhere;opacity:.85;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#progress{font-size:1rem;white-space:nowrap}
+button:focus-visible{outline:4px solid #b34e00;outline-offset:5px}
+@media(max-width:380px){#bar{gap:6px;padding:8px}#timer{font-size:.8rem;min-width:5em}#text{font-size:1.4rem}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -80,7 +93,8 @@ button.chip.dim{opacity:.6}
 </section>
 
 <section id="play">
-<div id="bar"><span>❤️</span><div class="pg"><i id="pgi"></i></div><div id="timer">0.0</div></div>
+<div id="bar"><span aria-hidden="true">❤️</span><div class="pg" role="progressbar" aria-label="지문 읽기 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="pgi"></i></div><span id="progress">0%</span><div id="timer">0.0</div></div>
+<div class="card"><p id="micstatus" role="status">🎤 듣고 있어요. 밑줄 친 단어부터 읽어 주세요.</p><p id="heard">인식한 말이 여기에 표시돼요.</p><div class="reading-help"><span class="read-done">초록: 읽기 확인</span> · <span class="read-live">노랑: 인식 중</span><br>표시가 멈추면 밑줄 친 단어부터 다시 읽어 주세요. 시간 제한 없이 끝까지 읽을 수 있어요.</div></div>
 <div class="card" id="text"></div>
 <button class="sub" id="stop">그만하기</button>
 </section>
@@ -160,24 +174,56 @@ MBC 〈VR 휴먼다큐멘터리-너를 만났다〉에서는 가상 현실 VR �
 };
 // [제한 초, 이름, 상품] — 30/60/90초
 const TIERS = [[30,"🥇 30초 이내","30초 상품"],[60,"🥈 60초 이내","60초 상품"],[90,"🥉 90초 이내","90초 상품"]];
-const PASS = 0.8;    // 원문과 일치해야 하는 비율
-const LIMIT = 180;   // 최대 제한 시간(초)
 
 // ===== 코드 =====
 const $ = id => document.getElementById(id);
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let grade = "1-2학년", decks = {}, target = "", normT = "";
-let rec, running = false, playing = false, prev = "", cur = "", t0 = 0, raf = 0, timeout = 0;
+let rec, running = false, playing = false, t0 = 0, raf = 0, restartTimer = 0;
+let words = [], wordEls = [], reading = {index:0, buffer:""}, session = 0;
 
 function show(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id===id))}
-function norm(s){return s.replace(/[^가-힣0-9]/g,"")}
+function norm(s){return s.normalize("NFKC").toLowerCase().replace(/[^가-힣a-z0-9]/g,"").replace(/sns/g,"에스엔에스").replace(/mbc|엠비시/g,"엠비씨").replace(/vr/g,"브이알").replace(/vs/g,"브이에스")}
 function paras(t){return t.split("\n").map(p=>`<p>${p}</p>`).join("")}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function pick(){if(!decks[grade]||!decks[grade].length)decks[grade]=shuffle(TEXTS[grade]);return decks[grade].pop()}
-function lcs(a,b){
-  let p=new Array(b.length+1).fill(0);
-  for(let i=1;i<=a.length;i++){const c=[0];for(let j=1;j<=b.length;j++)c[j]=a[i-1]===b[j-1]?p[j-1]+1:Math.max(p[j],c[j-1]);p=c}
-  return p[b.length];
+// Advance only through the next word. A later sentence cannot replace an unread one.
+// Whitespace and punctuation from the recognizer do not affect matching.
+function advanceReading(state, speech, list){
+  let index=state.index, buffer=state.buffer+norm(speech);
+  while(index<list.length){
+    const at=buffer.indexOf(list[index]);
+    if(at<0)break;
+    buffer=buffer.slice(at+list[index].length);index++;
+  }
+  return {index,buffer:buffer.slice(-Math.max(300,normT.length*2))};
+}
+function prepareText(){
+  words=[];wordEls=[];$("text").replaceChildren();
+  target.split("\n").forEach(line=>{
+    const p=document.createElement("p");
+    line.split(/(\s+)/).forEach(part=>{
+      if(!norm(part)){p.append(document.createTextNode(part));return}
+      const span=document.createElement("span");span.textContent=part;
+      words.push(norm(part));wordEls.push(span);p.append(span);
+    });
+    $("text").append(p);
+  });
+}
+function paintReading(live=reading){
+  let partial=0;
+  if(live.index<words.length){
+    const next=words[live.index];
+    for(let n=1;n<next.length;n++)if(live.buffer.endsWith(next.slice(0,n)))partial=n;
+  }
+  wordEls.forEach((el,i)=>{
+    el.className=i<reading.index?"read-done":i<live.index||i===live.index&&partial?"read-live":"";
+    if(i===reading.index)el.classList.add("read-next");
+  });
+  const chars=words.slice(0,live.index).reduce((n,w)=>n+w.length,0)+partial;
+  const percent=reading.index===words.length?100:Math.min(99,Math.floor(chars/normT.length*100));
+  $("pgi").style.width=percent+"%";$("progress").textContent=percent+"%";
+  $("pgi").parentElement.setAttribute("aria-valuenow",percent);
 }
 
 function drawHome(){
@@ -203,33 +249,51 @@ function begin(same,t){
   const iv=setInterval(()=>{n--;if(n>0){$("cnt").textContent=n}else{clearInterval(iv);$("cnt").textContent="🎤";startRec()}},900);
 }
 
-function startRec(){running=true;playing=false;prev="";cur="";makeRec(true)}
+function startRec(){session++;running=true;playing=false;reading={index:0,buffer:""};makeRec(true)}
 function makeRec(first){
-  rec=new SR();rec.lang="ko-KR";rec.continuous=true;rec.interimResults=true;
-  rec.onstart=()=>{if(first&&!playing)startPlay()};
-  rec.onresult=e=>{
-    let s="";for(let i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;
-    cur=(prev+" "+s).trim();
-    if(!playing)return;
-    const r=lcs(normT,norm(cur))/normT.length;
-    $("pgi").style.width=Math.min(100,r/PASS*100)+"%";
-    if(r>=PASS)finish(performance.now()-t0);
+  const activeSession=session, recognition=new SR();rec=recognition;
+  recognition.lang="ko-KR";recognition.continuous=true;recognition.interimResults=true;
+  let handled=0;
+  recognition.onstart=()=>{
+    if(!running||activeSession!==session)return;
+    if(first&&!playing)startPlay();
+    $("micstatus").textContent="🎤 듣고 있어요. 밑줄 친 단어부터 읽어 주세요.";
   };
-  rec.onerror=e=>{
-    if(e.error==="not-allowed"||e.error==="service-not-allowed"){running=false;playing=false;cancelAnimationFrame(raf);clearTimeout(timeout);show("home");$("msg").textContent="마이크 권한을 허용해 주세요."}
+  recognition.onresult=e=>{
+    if(!playing||!running||activeSession!==session)return;
+    let heard="", interim="";
+    for(let i=handled;i<e.results.length;i++){
+      const result=e.results[i], speech=result[0].transcript;
+      heard+=speech;
+      if(result.isFinal){reading=advanceReading(reading,speech,words);handled=i+1}else interim+=speech;
+    }
+    $("heard").textContent=heard?"인식한 말: "+heard.slice(-180):"인식한 말을 기다리고 있어요.";
+    paintReading(advanceReading(reading,interim,words));
+    if(words.length&&reading.index===words.length)finish(performance.now()-t0);
   };
-  rec.onend=()=>{if(running){prev=cur;try{makeRec(false)}catch(_){}}};
-  try{rec.start()}catch(_){}
+  recognition.onerror=e=>{
+    if(activeSession!==session||!running)return;
+    if(["not-allowed","service-not-allowed","audio-capture"].includes(e.error)){
+      stopAll();show("home");$("msg").textContent=e.error==="audio-capture"?"마이크를 찾지 못했어요. 연결을 확인하고 다시 시작해 주세요.":"마이크 권한을 허용한 뒤 다시 시작해 주세요.";
+    }else $("micstatus").textContent=e.error==="network"?"음성 연결을 다시 시도하고 있어요. 인터넷 연결을 확인해 주세요.":"🎤 잠시 멈췄어요. 마이크가 다시 켜지면 밑줄부터 읽어 주세요.";
+  };
+  recognition.onend=()=>{
+    if(running&&activeSession===session){
+      paintReading();$("micstatus").textContent="🎤 마이크를 다시 연결하고 있어요. 읽은 위치는 유지돼요.";
+      restartTimer=setTimeout(()=>{if(running&&activeSession===session)makeRec(first&&!playing)},350);
+    }
+  };
+  try{recognition.start()}catch(_){stopAll();show("home");$("msg").textContent="마이크를 시작하지 못했어요. 다시 시작해 주세요."}
 }
 
 function startPlay(){
-  playing=true;$("text").innerHTML=paras(target);$("pgi").style.width="0";show("play");window.scrollTo(0,0);
+  playing=true;prepareText();paintReading();$("heard").textContent="인식한 말이 여기에 표시돼요.";show("play");window.scrollTo(0,0);
   t0=performance.now();
   const tick=()=>{$("timer").textContent=((performance.now()-t0)/1000).toFixed(1)+"초";raf=requestAnimationFrame(tick)};
-  tick();timeout=setTimeout(()=>finish(null),LIMIT*1000);
+  tick();
 }
 
-function stopAll(){playing=false;running=false;cancelAnimationFrame(raf);clearTimeout(timeout);try{rec.abort()}catch(_){}}
+function stopAll(){playing=false;running=false;session++;cancelAnimationFrame(raf);clearTimeout(restartTimer);try{rec.abort()}catch(_){}}
 
 function finish(ms){
   if(!playing)return;
