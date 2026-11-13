@@ -187,14 +187,47 @@ function norm(s){return s.normalize("NFKC").toLowerCase().replace(/[^가-힣a-z0
 function paras(t){return t.split("\n").map(p=>`<p>${p}</p>`).join("")}
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function pick(){if(!decks[grade]||!decks[grade].length)decks[grade]=shuffle(TEXTS[grade]);return decks[grade].pop()}
-// Advance only through the next word. A later sentence cannot replace an unread one.
-// Whitespace and punctuation from the recognizer do not affect matching.
+// Allow one recognition typo only when the following words confirm the location.
+// Never skip a whole word, and require the final word to match exactly.
+function oneEditApart(a,b){
+  if(Math.abs(a.length-b.length)>1)return false;
+  let i=0,j=0,edits=0;
+  while(i<a.length&&j<b.length){
+    if(a[i]===b[j]){i++;j++;continue}
+    if(++edits>1)return false;
+    if(a.length>=b.length)i++;
+    if(b.length>=a.length)j++;
+  }
+  return edits+(i<a.length||j<b.length?1:0)<=1;
+}
+function findNextWord(buffer,list,index){
+  const word=list[index], exact=buffer.indexOf(word);
+  if(exact===0)return {at:0,length:word.length};
+  const short=word.length<=2;
+  const anchor=list.slice(index+1,index+(short?4:3)).join("");
+  // Short words need a longer exact context and cannot lose a syllable.
+  if((short?anchor.length>=8:anchor.length>=4&&word.length+anchor.length>=7)&&index<list.length-1){
+    const end=exact<0?buffer.length:exact;
+    for(let at=0;at<end;at++){
+      const min=word.length>=4?word.length-1:word.length;
+      for(let length=min;length<=word.length+(short?0:1);length++){
+        if(!buffer.startsWith(anchor,at+length))continue;
+        const candidate=buffer.slice(at,at+length);
+        const similar=word.length===1?
+          /[가-힣]/.test(word)&&/[가-힣]/.test(candidate)&&oneEditApart(word.normalize("NFD"),candidate.normalize("NFD")):
+          oneEditApart(word,candidate);
+        if(similar)return {at,length};
+      }
+    }
+  }
+  return exact<0?null:{at:exact,length:word.length};
+}
 function advanceReading(state, speech, list){
   let index=state.index, buffer=state.buffer+norm(speech);
   while(index<list.length){
-    const at=buffer.indexOf(list[index]);
-    if(at<0)break;
-    buffer=buffer.slice(at+list[index].length);index++;
+    const match=findNextWord(buffer,list,index);
+    if(!match)break;
+    buffer=buffer.slice(match.at+match.length);index++;
   }
   return {index,buffer:buffer.slice(-Math.max(300,normT.length*2))};
 }
@@ -255,12 +288,13 @@ function makeRec(first){
   recognition.lang="ko-KR";recognition.continuous=true;recognition.interimResults=true;
   let handled=0;
   recognition.onstart=()=>{
-    if(!running||activeSession!==session)return;
+    if(!running||activeSession!==session||rec!==recognition)return;
     if(first&&!playing)startPlay();
     $("micstatus").textContent="🎤 듣고 있어요. 밑줄 친 단어부터 읽어 주세요.";
   };
   recognition.onresult=e=>{
-    if(!playing||!running||activeSession!==session)return;
+    if(!playing||!running||activeSession!==session||rec!==recognition)return;
+    const before=reading.index;
     let heard="", interim="";
     for(let i=handled;i<e.results.length;i++){
       const result=e.results[i], speech=result[0].transcript;
@@ -268,17 +302,21 @@ function makeRec(first){
       if(result.isFinal){reading=advanceReading(reading,speech,words);handled=i+1}else interim+=speech;
     }
     $("heard").textContent=heard?"인식한 말: "+heard.slice(-180):"인식한 말을 기다리고 있어요.";
-    paintReading(advanceReading(reading,interim,words));
+    const live=advanceReading(reading,interim,words);
+    paintReading(live);
+    if(live.index===before&&norm(heard).length>=12&&words[before]){
+      $("micstatus").textContent="🎤 말은 들리고 있어요. 밑줄 친 ‘"+wordEls[before].textContent+"’부터 다시 읽어 주세요.";
+    }else $("micstatus").textContent="🎤 듣고 있어요. 밑줄 친 단어부터 읽어 주세요.";
     if(words.length&&reading.index===words.length)finish(performance.now()-t0);
   };
   recognition.onerror=e=>{
-    if(activeSession!==session||!running)return;
+    if(activeSession!==session||!running||rec!==recognition)return;
     if(["not-allowed","service-not-allowed","audio-capture"].includes(e.error)){
       stopAll();show("home");$("msg").textContent=e.error==="audio-capture"?"마이크를 찾지 못했어요. 연결을 확인하고 다시 시작해 주세요.":"마이크 권한을 허용한 뒤 다시 시작해 주세요.";
     }else $("micstatus").textContent=e.error==="network"?"음성 연결을 다시 시도하고 있어요. 인터넷 연결을 확인해 주세요.":"🎤 잠시 멈췄어요. 마이크가 다시 켜지면 밑줄부터 읽어 주세요.";
   };
   recognition.onend=()=>{
-    if(running&&activeSession===session){
+    if(running&&activeSession===session&&rec===recognition){
       paintReading();$("micstatus").textContent="🎤 마이크를 다시 연결하고 있어요. 읽은 위치는 유지돼요.";
       restartTimer=setTimeout(()=>{if(running&&activeSession===session)makeRec(first&&!playing)},350);
     }
