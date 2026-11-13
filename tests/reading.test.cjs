@@ -22,30 +22,32 @@ test('all nine passages complete, including character-by-character input',()=>{
   }
 });
 
-test('a recognition typo near 30% recovers using following words in every passage',()=>{
+test('a recognition typo near 30% does not advance highlights by inference',()=>{
   for(const passage of Object.values(TEXTS).flat()){
     const list=tokenize(passage);
     let position=Math.floor(list.length*.3);
-    while(position<list.length-2&&(list[position].length<3||list.slice(position+1,position+3).join('').length<4))position++;
+    while(position<list.length-2&&(list[position].length<3||list.slice(position+1,position+3).join('').length<4||list.slice(position+1,position+3).join('').includes(list[position])))position++;
     assert.ok(position<list.length-2);
     const speech=list.slice();
     speech[position]='쀍'+speech[position].slice(1);
-    assert.equal(advanceReading(empty(),speech.join(''),list).index,list.length);
+    assert.equal(advanceReading(empty(),speech.slice(0,position+3).join(''),list).index,position);
   }
 });
 
-test('context split over final speech events still resolves a typo',()=>{
+test('split exact speech events advance without waiting for following context',()=>{
   const list=['작은새가','나뭇가지에','앉아서','노래했어요'];
-  let state=advanceReading(empty(),'작은세가',list);
+  let state=advanceReading(empty(),'작은',list);
   assert.equal(state.index,0);
+  state=advanceReading(state,'새가',list);
+  assert.equal(state.index,1);
   state=advanceReading(state,'나뭇가지에 앉아서 노래했어요',list);
   assert.equal(state.index,list.length);
 });
 
-test('one inserted or missing syllable is accepted only with context',()=>{
+test('inserted or missing syllables do not move the confirmed position',()=>{
   const list=['나뭇가지에','앉아서','조용하게','노래했어요'];
   for(const first of ['나무가지에','나뭇가지위에']){
-    assert.equal(advanceReading(empty(),first+'앉아서조용하게노래했어요',list).index,list.length);
+    assert.equal(advanceReading(empty(),first+'앉아서조용하게노래했어요',list).index,0);
   }
 });
 
@@ -70,12 +72,12 @@ test('last word and ambiguous short words still require exact recognition',()=>{
   assert.equal(advanceReading(empty(),'작은새가 숲 속에서 노레했어요',list).index,3);
 });
 
-test('short recognition errors need strong context and cannot stand for a missing word',()=>{
+test('short recognition errors are not inferred from later words',()=>{
   const list=['윤우','작은문을','열고서','천천히','들어갔어요'];
-  assert.equal(advanceReading(empty(),'연우작은문을열고서천천히들어갔어요',list).index,list.length);
+  assert.equal(advanceReading(empty(),'연우작은문을열고서천천히들어갔어요',list).index,0);
   assert.equal(advanceReading(empty(),'작은문을열고서천천히들어갔어요',list).index,0);
   const sound=['쿵','문이닫히자','참았던숨을','내뱉었어요'];
-  assert.equal(advanceReading(empty(),'콩문이닫히자참았던숨을내뱉었어요',sound).index,sound.length);
+  assert.equal(advanceReading(empty(),'콩문이닫히자참았던숨을내뱉었어요',sound).index,0);
   assert.equal(advanceReading(empty(),'문이닫히자참았던숨을내뱉었어요',sound).index,0);
 });
 
