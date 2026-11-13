@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>리딩런</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Press+Start+2P&display=swap">
+<style>
+:root{--sky1:#43b0ee;--sky2:#d4f1ff;--cloud:#fff;--ink:#1f2a44;--card:#fffdf4;--line:#1f2a44;--grass:#47b04b;--grass2:#2f8a36;--dirt:#9a5a2b;--chip:#fffdf4;--shadow:#b9ad8a;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sky1:#17123f;--sky2:#7a47a8;--cloud:#8d75c4;--ink:#f6f0ff;--card:#2b2358;--line:#0b0824;--grass:#2f7d46;--grass2:#1f5a31;--dirt:#5b3a2a;--chip:#2b2358;--shadow:#120d33;color-scheme:dark}}
+:root[data-theme="dark"]{--sky1:#17123f;--sky2:#7a47a8;--cloud:#8d75c4;--ink:#f6f0ff;--card:#2b2358;--line:#0b0824;--grass:#2f7d46;--grass2:#1f5a31;--dirt:#5b3a2a;--chip:#2b2358;--shadow:#120d33;color-scheme:dark}
+html{height:100%}
+body{margin:0;min-height:100%;background:linear-gradient(var(--sky1),var(--sky2));background-attachment:fixed;color:var(--ink);font-family:'Jua','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;display:flex;flex-direction:column;align-items:center;padding:16px 16px 84px;box-sizing:border-box;text-align:center}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 70px 24px at 18% 14%,var(--cloud) 96%,transparent),radial-gradient(ellipse 50px 18px at 27% 16%,var(--cloud) 96%,transparent),radial-gradient(ellipse 80px 26px at 78% 27%,var(--cloud) 96%,transparent),radial-gradient(ellipse 54px 18px at 69% 29%,var(--cloud) 96%,transparent)}
+body::after{content:"";position:fixed;left:0;right:0;bottom:0;height:calc(54px + env(safe-area-inset-bottom,0px));pointer-events:none;background:linear-gradient(var(--grass2) 0 6px,var(--grass) 6px 18px,var(--dirt) 18px);border-top:4px solid var(--line)}
+section{display:none;width:100%;max-width:480px;flex-direction:column;align-items:center;gap:16px;margin:auto 0;position:relative;z-index:1}
+section.on{display:flex}
+h1,h2{margin:0}
+h1{font-size:4.8rem;line-height:1;color:#ffd21f;-webkit-text-stroke:8px #2b1405;paint-order:stroke fill;text-shadow:0 6px 0 #e8590c,0 10px 0 #2b1405;letter-spacing:2px}
+h2{font-size:2rem;color:#fff;text-shadow:0 3px 0 var(--line)}
+.sub2{font-family:'Press Start 2P',monospace;font-size:.9rem;color:#fff;text-shadow:0 2px 0 var(--line)}
+.coin{display:inline-block;width:1.25em;height:1.25em;border-radius:50%;background:#ffc61a;border:3px solid #b86a00;box-shadow:inset 0 0 0 3px #ffe27a;position:relative;flex:none;vertical-align:-.25em;box-sizing:border-box}
+.coin::after{content:"★";position:absolute;inset:0;display:grid;place-items:center;font-size:.7em;color:#d97706}
+.stage{position:relative;width:min(100%,340px);height:255px}
+.coins{position:absolute;left:36px;top:0;display:flex;gap:12px;font-size:2.2rem;animation:fl 1.2s ease-in-out infinite}
+.runner{position:absolute;left:84px;bottom:40px;font-size:8.5rem;line-height:1;animation:run .45s steps(2) infinite}
+.plat{position:absolute;left:0;right:0;bottom:0;height:44px;background:linear-gradient(var(--grass) 0 12px,var(--dirt) 12px);border:4px solid var(--line);border-radius:6px;box-sizing:border-box}
+@keyframes run{50%{transform:translateY(-16px)}}
+@keyframes fl{50%{transform:translateY(-6px)}}
+@keyframes pop{0%{transform:scale(.2)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+.card{background:var(--card);border:4px solid var(--line);border-radius:16px;padding:14px 18px;width:100%;box-sizing:border-box;box-shadow:0 6px 0 rgba(0,0,0,.25)}
+button{font:inherit;cursor:pointer;border:4px solid var(--line);border-radius:12px;padding:14px 34px;background:#58c04a;color:#fff;font-size:1.9rem;box-shadow:0 6px 0 #2f8a36;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+button:active{transform:translateY(5px);box-shadow:0 1px 0 #2f8a36}
+button.sub{background:var(--chip);color:var(--ink);box-shadow:0 6px 0 var(--shadow);text-shadow:none;font-size:1.6rem}
+button.chip{padding:10px 18px;font-size:1.3rem;background:var(--chip);color:var(--ink);box-shadow:0 4px 0 var(--shadow);text-shadow:none}
+button.chip.sel{background:#ffc61a;color:#1f2a44;box-shadow:0 4px 0 #b86a00}
+button.chip.dim{opacity:.6}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.row:not(#grades){flex-direction:column;width:100%}
+.row:not(#grades) button{width:100%}
+.tier{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:1.5rem;text-align:left}
+.tier b{flex:1;font-weight:400}
+#cnt{font-family:'Press Start 2P','Jua',monospace;font-size:8rem;color:#ffd21f;-webkit-text-stroke:8px #2b1405;paint-order:stroke fill;text-shadow:0 8px 0 #2b1405}
+#bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:3;width:100%;display:flex;align-items:center;gap:10px;padding:8px 12px;box-sizing:border-box;background:rgba(31,42,68,.92);border:3px solid var(--line);border-radius:14px;color:#fff}
+.pg{flex:1;height:16px;border:3px solid #0d1020;border-radius:4px;background:#6b6f86;overflow:hidden}
+.pg i{display:block;height:100%;width:0;background:linear-gradient(#7ee05f,#3fae3a);transition:width .3s}
+#timer{font-family:'Press Start 2P','Jua',monospace;font-size:1.05rem;color:#ffd21f;min-width:6em;text-align:right}
+#text{text-align:left;font-size:1.65rem;line-height:1.85;word-break:keep-all}
+#text p,.pv p{margin:.4em 0}
+#pvlist{display:flex;flex-direction:column;gap:16px;width:100%}
+.pv{text-align:left}.pv p{font-size:1.35rem;line-height:1.8;word-break:keep-all}.pv b{color:#e8590c;display:block;margin-bottom:6px;font-weight:400;font-size:1.3rem}
+.pv button{margin-top:8px}
+#trophy{font-size:6.5rem;animation:pop .6s ease-out}
+#time{font-family:'Press Start 2P','Jua',monospace;font-size:2.6rem;color:#ffd21f;-webkit-text-stroke:6px #2b1405;paint-order:stroke fill;text-shadow:0 5px 0 #2b1405}
+#badge{font-size:2.5rem;color:#fff;text-shadow:0 3px 0 var(--line);animation:pop .6s .15s ease-out both}
+#prize{font-size:1.7rem;color:#fff;text-shadow:0 2px 0 var(--line)}
+#msg{font-size:1.2rem;color:#fff;background:#e0382f;border:3px solid var(--line);border-radius:10px;padding:4px 12px}
+#msg:empty{display:none}
+</style>
+</head>
+<body>
+
+<section id="home" class="on">
+<div class="stage"><div class="coins"><i class="coin"></i><i class="coin"></i><i class="coin"></i><i class="coin"></i></div><div class="runner">🏃</div><div class="plat"></div></div>
+<h1>리딩런</h1>
+<div class="sub2">READ &amp; RUN!</div>
+<div class="row" id="grades"></div>
+<div class="card" id="legend"></div>
+<div class="row"><button id="go">▶ 시작</button><button class="sub" id="view">지문 확인</button></div>
+<div id="msg"></div>
+</section>
+
+<section id="count"><div id="cnt">3</div></section>
+
+<section id="preview">
+<h2 id="pvt"></h2>
+<div id="pvlist"></div>
+<button class="sub" id="pvback">돌아가기</button>
+</section>
+
+<section id="play">
+<div id="bar"><span>❤️</span><div class="pg"><i id="pgi"></i></div><div id="timer">0.0</div></div>
+<div class="card" id="text"></div>
+<button class="sub" id="stop">그만하기</button>
+</section>
+
+<section id="result">
+<div id="trophy">🏆</div>
+<div id="time"></div>
+<div id="badge"></div>
+<div id="prize"></div>
+<div class="row">
+<button id="next">다음 학생</button>
+<button class="sub" id="again">같은 글 다시</button>
+</div>
+</section>
+
+<script>
+// ===== 설정 =====
+// 학년군별 지문(한 페이지 분량). 줄바꿈(\n)은 문단 나눔. 3-4, 5-6학년 글은 받는 대로 추가합니다.
+const TEXTS = {
+"1-2학년": [
+`“현미기장밥, 햄모듬찌개, 삼치데리야끼구이, 애호박베이컨볶음, 섞박지, 오렌지.”
+그러고는 저도 모르게 툭 내뱉었어요.
+“고기도 없고. 오늘 급식도 별로잖아!”
+윤우가 불퉁댄 순간 작은 문이 벌컥 열렸어요. 딱 맞는 열쇠로 문을 연 듯 말이에요. 이내 보이지 않는 힘이 윤우를 안으로 훅 끌어당겼어요. 정신을 차려 보니 어느새 창고 안에 있었지요.
+쿵!
+문이 닫히자 윤우가 참았던 숨을 내뱉었어요.
+“후유, 투덜대니까 문이 열리네!”
+창고는 어제와 같은 모습이었어요. 붉은 전구가 켜 있고 선반 위에 큼직한 바구니가 올려져 있었어요. 윤우는 바구니에 붙은 종이를 유심히 봤어요.
+“이 말이 사실인지 아닌지 아는 방법은 딱 하나뿐이야.”
+포춘 쿠키 하나를 냉큼 집었어요. 그런데 포장을 벗기려다 말고 멈칫했어요. 혹시라도 어제처럼 맛없는 걸 뽑고 싶지는 않았지요.`,
+`“영양사 선생님이…… 마녀일지도 모른다는 소문.”
+“에이, 누가 그런 황당한 소리를 하나? 말도 안 돼.”
+재호가 어이없다는 듯 말했어요. 대영이가 덧붙였어요.
+“나랑 친한 형이 얘기해 줬는데, 어느 날 저녁 늦게 학교에 왔었대. 교실에 두고 간 게 있어서. 그런데 이상한 소리가 들려서 급식실로 갔더니, 영양사 선생님이 주문 같은 걸 외우면서 가르르가르르 웃고 있더래.”
+“풉! 아, 주문을 외우면서 가르르가르르 웃으면 다 마녀냐? 그럼 나도 마녀냐?”
+갑자기 재민이가 알 수 없는 말을 중얼거리며 가르르가르르가르르 웃었어요. 아이들이 재민이를 보고 키득댔지요. 대영이가 답답하다며 가슴을 쳤어요.
+“어유, 그게 다가 아니야! 겉모습도 평소랑 완전히 다르대. 검은 망토에 끝이 뾰족한 검은 모자를 쓰고, 덥수룩한 빨간 머리를 풀어 헤치고 말이야.”
+한 아이가 충격받은 얼굴로 중얼거렸어요.
+“영양사 선생님 머리는 검은 단발인데……”`,
+`“으악! 으악!”
+윤우는 미친 사람처럼 소리를 질렀어요. 그 순간 마녀가 불쑥 눈앞에 나타났어요. 마녀가 쇳소리 나는 목소리로 입을 뗐어요.
+“넌 왜 가축이 되지 않은 거지? 설마 뷔페 음식을 한 입도 안 먹은 거야?”
+돌처럼 굳어 있는 윤우를 보고 마녀가 음흉하게 웃었어요. 그러고는 망토 안쪽에서 빨간색 작은 병을 꺼내 보여 줬어요. 병에는 사람을 동물로 만드는 약이 들어 있다고 했어요. 그 약을 뷔페의 모든 음식에 넣었다고 했지요. 이내 마녀는 늘어선 음식 중에 치킨을 집어 내밀었어요.
+“자, 네가 제일 좋아하는 치킨이야. 냄새도 끝내주지? 어서 먹어 봐.”
+마녀가 치킨을 윤우 입에 밀어 넣으려고 했어요. 윤우는 입술을 꼭 다물었어요. 머리를 흔들어 정신을 차렸지요. 그 뒤 있는 힘을 다해 마녀를 확 떠밀었어요. 마녀가 동물들에 걸려 비틀대는 사이, 발이 보이지 않을 정도로 도망쳤지요.`
+],
+"3-4학년": [
+`“판사님! 인디언 조가 동굴 안에 있어요!”
+이 소식은 눈 깜짝할 새에 퍼졌고, 온 마을 사람들이 동굴 앞으로 몰려들었다. 대처 판사가 자물쇠에 열쇠를 넣고 돌리자 무거운 철문이 ‘끼익’ 소리를 내며 천천히 열렸다. 문 앞에는 인디언 조가 죽은 상태로 쓰러져 있었다.
+“탈출하려고 문을 얼마나 오랫동안 긁었는지, 칼이 두 동강이 났군.”
+“동굴 천장에서 떨어지는 물방울로 겨우 버티다 굶어 죽은 모양이야.”
+마을 사람들은 고개를 절레절레 저으며 쯧쯧 혀를 찼다.`,
+`매우 조용한 일요일이었다. 마을에는 구슬픈 교회 종소리가 울려 퍼졌다. 예배당 안은 검은 옷을 입은 사람들로 가득했다. 맨 앞줄에는 폴리 이모와 시드, 그리고 조의 가족이 앉아 있었다. 장례식이 시작되자 목사는 죽은 세 소년을 위해 기도했고, 사람들은 찬송가를 부르며 흐느꼈다. 그때였다. ‘끼익’ 하는 소리와 함께 교회 문이 아주 천천히 열렸다.
+“세상에! 이게 도대체 무슨……!”
+목사는 깜짝 놀라 말을 잇지 못했다. 사람들은 동시에 문 쪽으로 고개를 돌렸다. 그곳에는 모두가 죽었다고 믿었던 세 소년, 톰과 허클베리, 그리고 조가 나란히 서 있었다. 폴리 이모와 조의 가족들은 달려 나가 두 소년을 꼭 끌어안고, 입을 맞추며 환호했다.`,
+`‘인디언 조 머리에 벼락이나 떨어졌으면!’
+톰과 허클베리는 인디언 조의 뻔뻔함에 화가 치밀었지만, 그가 무서워 아무 말도 할 수 없었다.
+그날 이후, 톰은 양심의 가책에 시달리며 밤마다 잠을 설쳤다. 톰은 가끔 감옥에 갇힌 머프 포터를 찾아가 필요한 물건을 몰래 넣어 주었다. 그러면 마음이 조금은 편안해졌다.
+그런데 톰의 마음을 괴롭히는 사람이 한 명 더 있었다. 바로 베키였다. 베키는 아파서 며칠째 학교에 나오지 않고 있었다.
+‘베키가 너무 아파서 죽으면 어떡하지? 만약 그런 일이 생긴다면 전쟁놀이도, 해적 놀이도 하나도 재미없을 거야!’
+톰이 어찌나 우울해하던지, 폴리 이모는 걱정스러운 마음에 온갖 약을 구해다 먹일 정도였다.`
+],
+"5-6학년": [
+`온라인에 남은 흔적, 디지털 발자국
+디지털 발자국은 사람들이 온라인상에 남긴 다양한 디지털 기록을 가리키는 말이에요. 소셜 미디어에 올린 사진과 글, 댓글, 검색어 기록, 구매 이력과 결제 방법 등이 모두 디지털 발자국에 해당해요. 다른 말로 ‘디지털 흔적’, ‘디지털 풋프린트’라고도 하지요. 그런데 디지털 발자국이 점점 문제가 되고 있어요.
+과거의 굴레에서 벗어나 새 출발을 하고 싶어 하는 사람이 있어요. 예전에는 이름을 바꾸고, 살던 곳에서 멀리 이사를 해 새로운 인간관계를 만드는 게 가능했어요. 하지만 디지털 시대에는 과거로부터 벗어나는 일이 쉽지 않아요. 자신도 모르는 디지털 발자국이 온라인에 남아 있기 때문이에요.
+스페인의 한 남성은 오래전 금융 연체 기록이 인터넷에서 계속 검색되어 사생활 침해를 받는다며 검색 엔진에 기록을 지워 달라는 요구를 했고, 법원에서 이것이 받아들여졌어요.`,
+`누구나 가능한 ‘신상 털기’
+요즘에는 유명한 사람이 아닌 일반인들도 사생활을 침해받는 일이 많아지고 있어요. 무심코 올린 사진과 글, 동영상을 비롯해 댓글 한 줄에도 개인정보가 들어 있는 경우가 많이 있거든요. 누군가 의도적으로 내가 남긴 정보를 하나하나 모아서 분석하면 내 신상을 알아낼 수도 있어요. 학교 이름이나 집 위치 같은 작은 단서일지라도 내가 어디에 사는 누구인지를 알려 주는 힌트가 돼요. 이렇게 노출된 이름, 휴대폰 번호, 이메일 주소, 집 주소 등의 개인정보는 어떤 방식으로 악용될지 알 수 없어요. 타인의 정보를 이용해 범죄를 저지르는 사람들도 있거든요.
+안전하게 SNS 서비스를 즐기기 위해서 다음을 꼭 기억하세요.
+첫째, 다른 사람들과 함께 찍은 사진이나 영상을 올릴 때는 반드시 상대의 허락을 받아야 해요. 나의 개인정보만큼 다른 사람의 개인정보를 지키는 일도 중요하니까요.`,
+`잊힐 권리 vs 알 권리
+MBC 〈VR 휴먼다큐멘터리-너를 만났다〉에서는 가상 현실 VR 기술을 통해 세상을 떠난 가족을 다시 만나는 모습을 보여 줬어요. 또 다른 프로그램에서는 사망한 가수가 마치 되살아난 것처럼 멤버들과 노래를 하며 무대를 꾸미는 영상이 공개되기도 했어요.
+시청자들은 그 모습을 보며 눈물을 흘렸고, 또 위로를 받았어요. 그런데 한편에서는 비판의 목소리도 있었어요. 당사자의 ‘잊힐 권리’를 존중하지 않았기 때문이었죠. 그들은 죽은 사람의 의사를 알지 못하는 상황에서 이렇게 부활시키는 것이 옳은 일인지 질문을 던졌어요.
+사람이 죽음을 맞이한 후, 삭제하지 않은 일렉트로닉 페르소나는 혼란을 일으킬 수도 있어요. 그래서 죽은 사람의 데이터를 삭제하는 일이 꼭 필요하다고 생각하는 사람도 있어요. 반대로 죽은 사람을 추억하기 위해 데이터를 남겨 두는 사람들도 있지요.`
+]
+};
+// [제한 초, 이름, 상품] — 30/60/90초
+const TIERS = [[30,"🥇 30초 이내","30초 상품"],[60,"🥈 60초 이내","60초 상품"],[90,"🥉 90초 이내","90초 상품"]];
+const PASS = 0.8;    // 원문과 일치해야 하는 비율
+const LIMIT = 180;   // 최대 제한 시간(초)
+
+// ===== 코드 =====
+const $ = id => document.getElementById(id);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let grade = "1-2학년", decks = {}, target = "", normT = "";
+let rec, running = false, playing = false, prev = "", cur = "", t0 = 0, raf = 0, timeout = 0;
+
+function show(id){document.querySelectorAll("section").forEach(s=>s.classList.toggle("on",s.id===id))}
+function norm(s){return s.replace(/[^가-힣0-9]/g,"")}
+function paras(t){return t.split("\n").map(p=>`<p>${p}</p>`).join("")}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function pick(){if(!decks[grade]||!decks[grade].length)decks[grade]=shuffle(TEXTS[grade]);return decks[grade].pop()}
+function lcs(a,b){
+  let p=new Array(b.length+1).fill(0);
+  for(let i=1;i<=a.length;i++){const c=[0];for(let j=1;j<=b.length;j++)c[j]=a[i-1]===b[j-1]?p[j-1]+1:Math.max(p[j],c[j-1]);p=c}
+  return p[b.length];
+}
+
+function drawHome(){
+  $("grades").innerHTML="";
+  Object.keys(TEXTS).forEach(g=>{
+    const b=document.createElement("button");
+    b.className="chip"+(g===grade?" sel":"")+(TEXTS[g].length?"":" dim");
+    b.textContent=g+(TEXTS[g].length?"":" · 준비 중");
+    b.onclick=()=>{grade=g;$("msg").textContent="";drawHome()};$("grades").appendChild(b);
+  });
+  $("legend").innerHTML=TIERS.map(t=>`<div class="tier"><i class="coin"></i><b>${t[1]}</b><span>${t[2]}</span></div>`).join("");
+}
+
+function begin(same,t){
+  if(!SR){show("home");$("msg").textContent="이 브라우저는 음성인식을 지원하지 않아요. 안드로이드 크롬으로 열어 주세요.";return}
+  if(t){target=t}else if(!same){
+    if(!TEXTS[grade].length){show("home");$("msg").textContent="이 학년군은 아직 지문이 없어요.";return}
+    target=pick();
+  }
+  normT=norm(target);
+  $("msg").textContent="";show("count");
+  let n=3;$("cnt").textContent=n;
+  const iv=setInterval(()=>{n--;if(n>0){$("cnt").textContent=n}else{clearInterval(iv);$("cnt").textContent="🎤";startRec()}},900);
+}
+
+function startRec(){running=true;playing=false;prev="";cur="";makeRec(true)}
+function makeRec(first){
+  rec=new SR();rec.lang="ko-KR";rec.continuous=true;rec.interimResults=true;
+  rec.onstart=()=>{if(first&&!playing)startPlay()};
+  rec.onresult=e=>{
+    let s="";for(let i=0;i<e.results.length;i++)s+=e.results[i][0].transcript;
+    cur=(prev+" "+s).trim();
+    if(!playing)return;
+    const r=lcs(normT,norm(cur))/normT.length;
+    $("pgi").style.width=Math.min(100,r/PASS*100)+"%";
+    if(r>=PASS)finish(performance.now()-t0);
+  };
+  rec.onerror=e=>{
+    if(e.error==="not-allowed"||e.error==="service-not-allowed"){running=false;playing=false;cancelAnimationFrame(raf);clearTimeout(timeout);show("home");$("msg").textContent="마이크 권한을 허용해 주세요."}
+  };
+  rec.onend=()=>{if(running){prev=cur;try{makeRec(false)}catch(_){}}};
+  try{rec.start()}catch(_){}
+}
+
+function startPlay(){
+  playing=true;$("text").innerHTML=paras(target);$("pgi").style.width="0";show("play");window.scrollTo(0,0);
+  t0=performance.now();
+  const tick=()=>{$("timer").textContent=((performance.now()-t0)/1000).toFixed(1)+"초";raf=requestAnimationFrame(tick)};
+  tick();timeout=setTimeout(()=>finish(null),LIMIT*1000);
+}
+
+function stopAll(){playing=false;running=false;cancelAnimationFrame(raf);clearTimeout(timeout);try{rec.abort()}catch(_){}}
+
+function finish(ms){
+  if(!playing)return;
+  stopAll();
+  const s=ms==null?null:ms/1000;
+  const tier=s==null?null:TIERS.find(t=>s<=t[0]);
+  $("time").textContent=s==null?"시간 초과":s.toFixed(1)+"초";
+  $("badge").textContent=tier?tier[1]:"💪 다음에 또 도전!";
+  $("prize").textContent=tier?"상품: "+tier[2]:"";
+  show("result");
+}
+
+$("go").onclick=()=>begin(false);
+$("next").onclick=()=>begin(false);
+$("again").onclick=()=>begin(true);
+$("stop").onclick=()=>{stopAll();show("home")};
+$("pvback").onclick=()=>show("home");
+$("view").onclick=()=>{
+  const L=TEXTS[grade];
+  $("pvt").textContent=grade+" 지문 "+L.length+"개";
+  $("pvlist").innerHTML=L.length?"":"<p>아직 지문이 없어요.</p>";
+  L.forEach((t,i)=>{
+    const d=document.createElement("div");d.className="card pv";
+    d.innerHTML=`<b>지문 ${i+1} · ${norm(t).length}자</b>`+paras(t);
+    const b=document.createElement("button");b.className="chip";b.textContent="이 지문으로 시작";b.onclick=()=>begin(false,t);
+    d.appendChild(b);$("pvlist").appendChild(d);
+  });
+  show("preview");window.scrollTo(0,0);
+};
+drawHome();
+</script>
+</body>
+</html>
